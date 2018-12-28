@@ -1,10 +1,11 @@
 package com.example.easynotes.controller;
-
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 import java.util.List;
-
 import javax.validation.Valid;
-
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.Resource;
+import org.springframework.hateoas.mvc.ControllerLinkBuilder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,7 +15,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
 import com.example.easynotes.exception.ResourceNotFoundException;
 import com.example.easynotes.model.Note;
 import com.example.easynotes.repository.NoteRepository;
@@ -44,9 +44,15 @@ public class NoteController {
 	
 	//Get a single Note
 	@GetMapping("/notes/{id}")
-	public Note getNoteById(@PathVariable(value="id") Long noteId)
+	public Resource<Note> getNoteById(@PathVariable(value="id") Long noteId)
 	{	
-		return noteRepository.findById(noteId).orElseThrow(()-> new ResourceNotFoundException("Note", "id", noteId));
+		Note note = noteRepository.findById(noteId).orElseThrow(()-> new ResourceNotFoundException("Note", "Id", noteId));
+		//"all-users" , SERVER_PATH+"/users"
+		//retrieveAllUsers
+		Resource<Note> resource = new Resource<Note>(note);
+		ControllerLinkBuilder linkTo=linkTo(methodOn(this.getClass()).getAllNotes());
+		resource.add(linkTo.withRel("all-users"));
+		return resource;
 	}
 	
 	//Update a Note
@@ -57,9 +63,7 @@ public class NoteController {
 		Note note = noteRepository.findById(noteId).orElseThrow(()-> new ResourceNotFoundException("note", "id", noteId));
 		 note.setTitle(noteDetails.getTitle());
 		 note.setContent(noteDetails.getContent());
-		
 		 Note updatedNote = noteRepository.save(note);
-		 
 		 return updatedNote;
 		
 	}
@@ -69,9 +73,7 @@ public class NoteController {
 	public ResponseEntity<?> deleteNote(@PathVariable(value="id") Long noteId)
 	{
 		Note note = noteRepository.findById(noteId).orElseThrow(()-> new ResourceNotFoundException("Note", "id ",noteId));
-		
-		noteRepository.delete(note);
-		
+		noteRepository.delete(note);		
 		return ResponseEntity.ok().build();
 	}
 	
